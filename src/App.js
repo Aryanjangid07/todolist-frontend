@@ -1,56 +1,48 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from './api'; // <-- import custom axios instance
 
 function App() {
   const [todos, setTodos] = useState([]);
-  const [newTask, setNewTask] = useState('');
-
-  const fetchTodos = async () => {
-    try {
-      const res = await axios.get('http://localhost:5000/api/todos');
-      setTodos(res.data);
-    } catch (err) {
-      console.error('Error fetching todos:', err);
-    }
-  };
-
-  const addTodo = async () => {
-    if (!newTask.trim()) return;
-    try {
-      const res = await axios.post('http://localhost:5000/api/todos', { task: newTask });
-      setTodos([...todos, res.data]);
-      setNewTask('');
-    } catch (err) {
-      console.error('Error adding todo:', err);
-    }
-  };
-
-  const deleteTodo = async (id) => {
-    try {
-      await axios.delete(`http://localhost:5000/api/todos/${id}`);
-      setTodos(todos.filter(todo => todo._id !== id));
-    } catch (err) {
-      console.error('Error deleting todo:', err);
-    }
-  };
+  const [newTodo, setNewTodo] = useState('');
 
   useEffect(() => {
-    fetchTodos();
+    api.get('/todos')
+      .then(res => setTodos(res.data))
+      .catch(err => console.error('Error fetching todos:', err));
   }, []);
 
+  const addTodo = () => {
+    if (!newTodo.trim()) return;
+    api.post('/todos', { task: newTodo })
+      .then(res => {
+        setTodos([...todos, res.data]);
+        setNewTodo('');
+      })
+      .catch(err => console.error('Error adding todo:', err));
+  };
+
+  const deleteTodo = (id) => {
+    api.delete(`/todos/${id}`)
+      .then(() => {
+        setTodos(todos.filter(todo => todo._id !== id));
+      })
+      .catch(err => console.error('Error deleting todo:', err));
+  };
+
   return (
-    <div style={{ padding: 20 }}>
+    <div>
       <h1>To-Do List</h1>
       <input
-        value={newTask}
-        onChange={e => setNewTask(e.target.value)}
-        placeholder="Enter task..."
+        type="text"
+        value={newTodo}
+        onChange={e => setNewTodo(e.target.value)}
       />
       <button onClick={addTodo}>Add</button>
       <ul>
         {todos.map(todo => (
           <li key={todo._id}>
-            {todo.task} <button onClick={() => deleteTodo(todo._id)}>❌</button>
+            {todo.task}
+            <button onClick={() => deleteTodo(todo._id)}>Delete</button>
           </li>
         ))}
       </ul>
